@@ -8,7 +8,7 @@ interface Todo {
   addedDate: string; // 追加日
   deadline: string; // 期限
   title: string; // タスク名
-  priority: number; // 優先度（数値型）
+  priority: number; // 優先度（数値型） ¥ß
 }
 
 const Input = styled.input`
