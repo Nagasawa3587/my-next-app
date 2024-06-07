@@ -4,16 +4,16 @@ import styled from 'styled-components';
 
 interface Todo {
   id: number;
-  number: number; // No.
-  addedDate: string; // 追加日
-  deadline: string; // 期限
-  title: string; // タスク名
-  priority: number; // 優先度（数値型） ¥ß
+  number: number;
+  added_date: string;
+  deadline: string;
+  title: string;
+  priority: number;
 }
 
 const Input = styled.input`
-  padding: 8px;
-  margin: 5px;
+  padding: 10px; 
+  margin: 10px; 
   border: 1px solid #ddd;
 `;
 
@@ -28,9 +28,9 @@ const Button = styled.button`
   margin: 5px;
   background-color: #4CAF50;
   color: white;
-  border: none;
-  cursor: pointer;
-  display: inline-block;
+  border: 1px solid black; 
+  cursor: pointer; 
+  display: inline-block; 
 
   &:hover {
     background-color: #45a049;
@@ -38,7 +38,7 @@ const Button = styled.button`
 `;
 
 const TodoTable = styled.table`
-  width: 100%;
+  width: 50%; 
   border-collapse: collapse;
 `;
 
@@ -49,66 +49,84 @@ const TodoHeader = styled.th`
 `;
 
 const TodoRow = styled.tr`
-  &:nth-child(even) {
-    background-color: #f9f9f9;
+  &:nth-child(even) {       
+    background-color: #f9f9f9; 
   }
 `;
 
 const TodoData = styled.td`
   padding: 8px;
   border: 1px solid #ddd;
-  text-align: center;
+  text-align: center; 
 `;
 
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState({
-    title: '',
-    deadline: '',
-    priority: '中'
+    title: '', 
+    deadline: '', 
+    priority: 0 
   });
 
   useEffect(() => {
+    console.log('Fetching todos...');
     axios.get('http://localhost:8000/todos/')
-         .then(response => setTodos(response.data))
-         .catch(error => console.error('Error fetching todos:', error));
-  }, []);
+      .then(response => {
+        console.log('Fetched Todos:', response.data);
+        setTodos(response.data);
+      })
+      .catch(error => console.error('Error fetching todos:', error));
+  }, []); // 空の依存配列を使用して、初回レンダリング時にのみ実行
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    const isNumeric = name === 'priority';
     setNewTodo({
       ...newTodo,
-      [e.target.name]: e.target.value
+      [name]: isNumeric ? Number(value) : value
     });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // フォームの送信を防ぐ
     const todoToAdd = {
       ...newTodo,
-      addedDate: new Date().toISOString().slice(0, 10), // Set current date
-      number: todos.length + 1 // Auto increment number
+      added_date: new Date().toISOString().slice(0, 10),
+      number: todos.length + 1
     };
+
+    console.log('Adding todo:', todoToAdd);
+
     axios.post('http://localhost:8000/todos/', {
-      due_date: new Date(newTodo.deadline),
-      task_name: newTodo.title,
-      priority: newTodo.priority
+      deadline: todoToAdd.deadline,
+      title: todoToAdd.title,
+      priority: todoToAdd.priority
     })
-         .then(response => {
-           setTodos([...todos, response.data]);
-           setNewTodo({ title: '', deadline: '', priority: '中' }); // Reset form
-         })
-         .catch(error => {
-           console.error('Error posting todo:', error);
-           alert(`Failed to add todo. Please try again. Error: ${error.response?.data?.message || error.message}`); // User feedback
-         });
+      .then(response => {
+        console.log('Added Todo:', response.data);
+        setTodos([...todos, { 
+          id: response.data.id,
+          number: todoToAdd.number,
+          added_date: todoToAdd.added_date,
+          deadline: todoToAdd.deadline,
+          title: todoToAdd.title,
+          priority: todoToAdd.priority,
+        }]);
+        setNewTodo({ title: '', deadline: '', priority: 0 }); // フォームをリセット
+      })
+      .catch(error => {
+        console.error('Error posting todo:', error);
+        alert(`Failed to add todo. Please try again. Error: ${error.response?.data?.message || error.message}`);
+      });
   };
 
   const handleDelete = (id: number) => {
+    console.log('Deleting todo with id:', id);
     axios.delete(`http://localhost:8000/todos/${id}`)
-         .then(() => {
-           setTodos(todos.filter(todo => todo.id !== id));
-         })
-         .catch(error => console.error('Error deleting todo:', error));
+      .then(() => {
+        setTodos(todos.filter(todo => todo.id !== id));
+      })
+      .catch(error => console.error('Error deleting todo:', error));
   };
 
   return (
@@ -118,9 +136,9 @@ export default function Home() {
         <Input type="text" name="title" placeholder="タスク名" value={newTodo.title} onChange={handleInputChange} />
         <Input type="date" name="deadline" value={newTodo.deadline} onChange={handleInputChange} />
         <Select name="priority" value={newTodo.priority} onChange={handleInputChange}>
-          <option value="高">高</option>
-          <option value="中">中</option>
-          <option value="低">低</option>
+          <option value={0}>高</option>
+          <option value={1}>中</option>
+          <option value={2}>低</option>
         </Select>
         <Button type="submit">Add Todo</Button>
       </form>
@@ -139,7 +157,7 @@ export default function Home() {
           {todos.map(todo => (
             <TodoRow key={todo.id}>
               <TodoData>{todo.number}</TodoData>
-              <TodoData>{todo.addedDate}</TodoData>
+              <TodoData>{todo.added_date}</TodoData>
               <TodoData>{todo.deadline}</TodoData>
               <TodoData>{todo.title}</TodoData>
               <TodoData>{todo.priority}</TodoData>
@@ -151,5 +169,5 @@ export default function Home() {
         </tbody>
       </TodoTable>
     </div>
-  )
+  );
 }
